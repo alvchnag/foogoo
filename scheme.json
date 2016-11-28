@@ -1,0 +1,31 @@
+{
+  "intents": [
+    {
+      "intent": "Add",
+      "slots":[
+        {
+          "name":"addFood",
+          "type":"Food"
+        }
+      ]
+    },
+    {
+      "intent": "Check",
+      "slots":[
+        {
+          "name":"checkFood",
+          "type":"Food"
+        }
+      ]
+    },
+    {
+      "intent": "Toss",
+      "slots":[
+        {
+          "name":"tossFood",
+          "type":"Food"
+        }
+      ]
+    }
+  ]
+}
