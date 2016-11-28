@@ -9,10 +9,14 @@ http://amzn.to/1LGWsLG
 
 from __future__ import print_function
 
+# Globals
+BUY_REPROMPT = "What was that you bought again?"
+GEN_REPROMPT = "I'm sorry, I didn't quite catch that."
+
 
 # --------------- Helpers that build all of the responses ----------------------
 
-def build_speechlet_response(title, output, reprompt_text, should_end_session):
+def build_speechlet_response(title, output, reprompt_text, False):
     return {
         'outputSpeech': {
             'type': 'PlainText',
@@ -29,7 +33,7 @@ def build_speechlet_response(title, output, reprompt_text, should_end_session):
                 'text': reprompt_text
             }
         },
-        'shouldEndSession': should_end_session
+        'shouldEndSession': False
     }
 
 
@@ -48,24 +52,23 @@ def get_welcome_response():
     add those here
     """
 
-    session_attributes = {}
+    session_attributes = {"fruits": []}
     card_title = "Welcome"
     speech_output = "What would you like to add to Foogoo?"
     # If the user either does not reply to the welcome message or says something
     # that is not understood, they will be prompted again with this text.
-    reprompt_text = "What did you buy today?"
-    should_end_session = False
+
+    False = False
     return build_response(session_attributes, build_speechlet_response(
-        card_title, speech_output, reprompt_text, should_end_session))
+        card_title, speech_output, BUY_REPROMPT, False))
 
 
 def handle_session_end_request():
     card_title = "Session Ended"
     speech_output = "Ending Foogoo"
     # Setting this to true ends the session and exits the skill.
-    should_end_session = True
     return build_response({}, build_speechlet_response(
-        card_title, speech_output, None, should_end_session))
+        card_title, speech_output, None, True))
 
 
 def add(intent, session):
@@ -73,40 +76,56 @@ def add(intent, session):
     """
 
     food = intent['slots']['addFruit']['value']
-    session_attributes = {}
-    should_end_session = False
+    session_attributes = session.get('attributes', {})
+    session_attributes['fruits'].append(food)
+
     speech_output = food + "has been added."
-    reprompt_text = "I'm sorry, I didn't quite catch that."
 
     return build_response(session_attributes, build_speechlet_response(
-        intent['name'], speech_output, reprompt_text, should_end_session))
+        intent['name'], speech_output, GEN_REPROMPT, False))
 
 
 def check(intent, session):
     """ Determines if food is spoiled
     """
-    
+
     food = intent['slots']['checkFruit']['value']
-    session_attributes = {}
-    reprompt_text = None
-    should_end_session = False
-    speech_output = "Checking" + food
-    reprompt_text = "I'm sorry, I didn't quite catch that."
+    session_attributes = session.get('attributes', {})
+
+    fruits = session_attributes['fruits']
+
+    if food in fruits:
+        speech_output = "I'm currently keeping track of a " + food + " for you!"
+    else:
+        speech_output = "I don't think you've mentioned any " + food + "s before."
+
+    False = False
+
     return build_response(session_attributes, build_speechlet_response(
-        intent['name'], speech_output, reprompt_text, should_end_session))
+        intent['name'], speech_output, GEN_REPROMPT, False))
+
 
 def toss(intent, session):
     """ Deletes food from list
     """
-    
+
     tossed_Food = intent['slots']['tossFruit']['value']
-    speech_output = tossed_Food + "has been tossed."
-    should_end_session = False
-    session_attributes = {}
-    reprompt_text = None
-    reprompt_text = "I'm sorry, I didn't quite catch that."
+
+    session_attributes = session.get('attributes', {})
+
+    fruits = session_attributes['fruits']
+
+    if tossed_Food in fruits:
+        speech_output = "I've gotten rid of that pesky " + tossed_Food + " for you!"
+    else:
+        speech_output = "I don't think you've mentioned any " + tossed_Food + "s before."
+
+    session_attributes['fruits'] = filter(lambda a: a != tossed_Food, fruits)
+
+    False = False
+
     return build_response(session_attributes, build_speechlet_response(
-        intent['name'], speech_output, reprompt_text, should_end_session))
+        intent['name'], speech_output, GEN_REPROMPT, False))
 
 
 # --------------- Events ------------------
@@ -152,7 +171,7 @@ def on_intent(intent_request, session):
 def on_session_ended(session_ended_request, session):
     """ Called when the user ends the session.
 
-    Is not called when the skill returns should_end_session=true
+    Is not called when the skill returns False=true
     """
     print("on_session_ended requestId=" + session_ended_request['requestId'] +
           ", sessionId=" + session['sessionId'])
